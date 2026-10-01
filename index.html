@@ -462,6 +462,25 @@
     </footer>
   </div>
 
+
+  <!-- Custom Admin Password Modal -->
+  <div id="pwModal" class="pw-modal-overlay" style="display:none;">
+    <div class="pw-modal-card">
+      <div class="pw-modal-icon">🔐</div>
+      <h3 class="pw-modal-title">스튜디오 관리자</h3>
+      <p class="pw-modal-subtitle">비밀번호를 입력해 주세요</p>
+      <div class="pw-input-wrap">
+        <input type="password" id="pwInput" class="pw-input" placeholder="• • • • • •" maxlength="20" autocomplete="off">
+      </div>
+      <p id="pwError" class="pw-error" style="display:none;">비밀번호가 올바르지 않습니다.</p>
+      <div class="pw-modal-actions">
+        <button type="button" id="pwCancelBtn" class="pw-btn pw-btn-cancel">취소</button>
+        <button type="button" id="pwConfirmBtn" class="pw-btn pw-btn-confirm">확인</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
+
 </body>
 </html>

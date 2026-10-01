@@ -787,16 +787,51 @@ function initEventListeners() {
   });
 
   // 8. Admin Modal Actions
-  el.openAdminBtn.addEventListener('click', () => {
-    const pw = prompt('관리자 비밀번호를 입력하세요.');
-    if (pw === null) return; // 취소
-    if (pw !== '202424') {
-      alert('비밀번호가 올바르지 않습니다.');
-      return;
+  const pwModal    = document.getElementById('pwModal');
+  const pwInput    = document.getElementById('pwInput');
+  const pwError    = document.getElementById('pwError');
+  const pwCancelBtn  = document.getElementById('pwCancelBtn');
+  const pwConfirmBtn = document.getElementById('pwConfirmBtn');
+
+  function openPwModal() {
+    pwInput.value = '';
+    pwError.style.display = 'none';
+    pwModal.style.display = 'flex';
+    setTimeout(() => pwInput.focus(), 100);
+  }
+
+  function closePwModal() {
+    pwModal.style.display = 'none';
+    pwInput.value = '';
+    pwError.style.display = 'none';
+  }
+
+  function submitPw() {
+    if (pwInput.value === '202424') {
+      closePwModal();
+      renderAdminBookingsTable();
+      renderBlockedListTable();
+      el.adminModal.style.display = 'flex';
+    } else {
+      pwError.style.display = 'block';
+      // Re-trigger shake animation
+      pwError.style.animation = 'none';
+      void pwError.offsetWidth;
+      pwError.style.animation = '';
+      pwInput.value = '';
+      pwInput.focus();
     }
-    renderAdminBookingsTable();
-    renderBlockedListTable();
-    el.adminModal.style.display = 'flex';
+  }
+
+  el.openAdminBtn.addEventListener('click', openPwModal);
+  pwCancelBtn.addEventListener('click', closePwModal);
+  pwConfirmBtn.addEventListener('click', submitPw);
+  pwInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitPw();
+    if (e.key === 'Escape') closePwModal();
+  });
+  pwModal.addEventListener('click', (e) => {
+    if (e.target === pwModal) closePwModal();
   });
 
   el.closeAdminBtn.addEventListener('click', () => {
