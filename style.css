@@ -1343,6 +1343,50 @@ html, body {
   background: #FFF;
 }
 
+.schedule-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1.5px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.mode-toggle-btn {
+  padding: 7px 14px;
+  border: 1.5px solid var(--primary-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-toggle-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.mode-toggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.schedule-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.schedule-section-header h5 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
 /* Footer */
 .app-footer {
   text-align: center;
@@ -1405,8 +1449,191 @@ html, body {
 }
 
 /* ==========================================================================
-   Custom Admin Password Modal
+   Admin Calendar View
    ========================================================================== */
+
+.admin-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.admin-cal-month {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.admin-cal-nav {
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary-border);
+  color: var(--primary);
+  border-radius: var(--radius-sm);
+  width: 34px;
+  height: 34px;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.admin-cal-nav:hover {
+  background: var(--primary-border);
+}
+
+.admin-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-subtle);
+  margin-bottom: 6px;
+  letter-spacing: 0.03em;
+}
+
+.admin-cal-weekdays span:first-child { color: #C05050; }
+.admin-cal-weekdays span:last-child  { color: #4A7C72; }
+
+.admin-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.admin-cal-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  min-height: 44px;
+}
+
+.admin-cal-cell:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+}
+
+.admin-cal-cell.empty {
+  cursor: default;
+  pointer-events: none;
+}
+
+.admin-cal-cell.today {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+.admin-cal-cell.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.admin-cal-cell.sun { color: #C05050; }
+.admin-cal-cell.sat { color: #4A7C72; }
+.admin-cal-cell.selected.sun,
+.admin-cal-cell.selected.sat { color: #fff; }
+
+.admin-cal-badge {
+  margin-top: 3px;
+  background: var(--pink-accent);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+.admin-cal-cell.selected .admin-cal-badge {
+  background: rgba(255,255,255,0.35);
+  color: #fff;
+}
+
+.admin-cal-detail {
+  margin-top: 16px;
+  border-top: 1.5px solid var(--border-color);
+  padding-top: 14px;
+  min-height: 48px;
+}
+
+.admin-cal-detail-empty {
+  text-align: center;
+  color: var(--text-subtle);
+  font-size: 0.83rem;
+  padding: 12px 0;
+}
+
+.admin-cal-detail-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.admin-detail-card {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-detail-card:last-child { margin-bottom: 0; }
+
+.admin-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-detail-time {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.admin-detail-name {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.admin-detail-type {
+  font-size: 0.75rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.admin-detail-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+
 
 .pw-modal-overlay {
   position: fixed;

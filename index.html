@@ -362,8 +362,9 @@
       <div class="modal-card">
         <div class="modal-header">
           <div class="admin-tabs">
-            <button type="button" class="admin-tab active" id="tabBookings">📋 신청 내역 관리 (<span id="tabCountSpan">0</span>)</button>
-            <button type="button" class="admin-tab" id="tabSchedules">🚫 예약 불가/레슨 일정 차단</button>
+            <button type="button" class="admin-tab active" id="tabBookings">📋 신청 내역 (<span id="tabCountSpan">0</span>)</button>
+            <button type="button" class="admin-tab" id="tabCalendar">📅 캘린더 보기</button>
+            <button type="button" class="admin-tab" id="tabSchedules">🚫 일정 차단</button>
           </div>
           <button type="button" class="close-btn" id="closeAdminBtn">&times;</button>
         </div>
@@ -398,49 +399,136 @@
             </div>
           </div>
 
-          <!-- SUB-TAB 2: Blocked Schedules (Lessons, Personal, Holidays) -->
+          <!-- SUB-TAB 2: Admin Calendar View -->
+          <div id="adminCalendarPanel" style="display: none;">
+            <div class="admin-cal-header">
+              <button type="button" class="admin-cal-nav" id="adminCalPrev">&#8249;</button>
+              <span class="admin-cal-month" id="adminCalMonthLabel"></span>
+              <button type="button" class="admin-cal-nav" id="adminCalNext">&#8250;</button>
+            </div>
+            <div class="admin-cal-weekdays">
+              <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+            </div>
+            <div class="admin-cal-grid" id="adminCalGrid"></div>
+            <div class="admin-cal-detail" id="adminCalDetail"></div>
+          </div>
+
+          <!-- SUB-TAB 3: Blocked Schedules (Recurring Lessons & Specific Dates) -->
           <div id="adminSchedulesPanel" style="display: none;">
             <div class="block-form-box">
-              <h4>🚫 예약 불가 시간 추가 (레슨 / 개인일정 / 휴무)</h4>
-              <p class="admin-tip">여기 등록된 날짜나 시간은 예약자가 선택할 수 없도록 달력에서 비활성화됩니다.</p>
-              
-              <div class="block-inputs">
-                <div class="block-input-group">
-                  <label for="blockDateInput">날짜</label>
-                  <input type="date" id="blockDateInput" class="form-input-sm">
+              <div class="schedule-mode-toggle">
+                <button type="button" class="mode-toggle-btn active" id="modeWeeklyBtn">🔁 매주 반복 고정 레슨 설정</button>
+                <button type="button" class="mode-toggle-btn" id="modeSingleBtn">📅 특정 날짜 1회성 차단</button>
+              </div>
+
+              <!-- Form 1: Weekly Recurring Lesson -->
+              <div id="weeklyBlockForm">
+                <h4>🔁 매주 고정 레슨 / 반복 일정 등록</h4>
+                <p class="admin-tip">지정하신 요일과 시간은 <strong>매주 자동으로 예약이 차단</strong>되어 예약자가 선택할 수 없습니다.</p>
+                <div class="block-inputs">
+                  <div class="block-input-group">
+                    <label for="weeklyDaySelect">반복 요일</label>
+                    <select id="weeklyDaySelect" class="form-input-sm">
+                      <option value="1">매주 월요일</option>
+                      <option value="2">매주 화요일</option>
+                      <option value="3">매주 수요일</option>
+                      <option value="4">매주 목요일</option>
+                      <option value="5">매주 금요일</option>
+                      <option value="6">매주 토요일</option>
+                      <option value="0">매주 일요일</option>
+                    </select>
+                  </div>
+                  <div class="block-input-group">
+                    <label for="weeklyTimeSelect">고정 시간</label>
+                    <select id="weeklyTimeSelect" class="form-input-sm">
+                      <option value="ALL">하루 종일 (정기 휴무)</option>
+                      <option value="10:00">10:00</option>
+                      <option value="11:00">11:00</option>
+                      <option value="13:00">13:00</option>
+                      <option value="14:00">14:00</option>
+                      <option value="15:00">15:00</option>
+                      <option value="16:00">16:00</option>
+                      <option value="17:00">17:00</option>
+                      <option value="18:00">18:00</option>
+                      <option value="19:00">19:00</option>
+                      <option value="20:00">20:00</option>
+                    </select>
+                  </div>
+                  <div class="block-input-group" style="flex: 1; min-width: 140px;">
+                    <label for="weeklyReasonInput">레슨명 / 사유</label>
+                    <input type="text" id="weeklyReasonInput" class="form-input-sm" placeholder="예: 정기 어쿠스틱 기타 레슨">
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" id="addWeeklyBlockBtn" style="align-self: flex-end;">+ 매주 반복 추가</button>
                 </div>
-                <div class="block-input-group">
-                  <label for="blockTimeSelect">시간 (선택)</label>
-                  <select id="blockTimeSelect" class="form-input-sm">
-                    <option value="ALL">하루 종일 (전체 휴무)</option>
-                    <option value="10:00">10:00</option>
-                    <option value="11:00">11:00</option>
-                    <option value="13:00">13:00</option>
-                    <option value="14:00">14:00</option>
-                    <option value="15:00">15:00</option>
-                    <option value="16:00">16:00</option>
-                    <option value="17:00">17:00</option>
-                    <option value="18:00">18:00</option>
-                    <option value="19:00">19:00</option>
-                    <option value="20:00">20:00</option>
-                  </select>
+              </div>
+
+              <!-- Form 2: Single Date Block -->
+              <div id="singleBlockForm" style="display: none;">
+                <h4>📅 특정 날짜 1회성 예약 차단</h4>
+                <p class="admin-tip">특정 날짜 하루 또는 특정 시간대에 잡힌 개인 일정/임시 휴무를 차단합니다.</p>
+                <div class="block-inputs">
+                  <div class="block-input-group">
+                    <label for="blockDateInput">날짜</label>
+                    <input type="date" id="blockDateInput" class="form-input-sm">
+                  </div>
+                  <div class="block-input-group">
+                    <label for="blockTimeSelect">시간 (선택)</label>
+                    <select id="blockTimeSelect" class="form-input-sm">
+                      <option value="ALL">하루 종일 (전체 휴무)</option>
+                      <option value="10:00">10:00</option>
+                      <option value="11:00">11:00</option>
+                      <option value="13:00">13:00</option>
+                      <option value="14:00">14:00</option>
+                      <option value="15:00">15:00</option>
+                      <option value="16:00">16:00</option>
+                      <option value="17:00">17:00</option>
+                      <option value="18:00">18:00</option>
+                      <option value="19:00">19:00</option>
+                      <option value="20:00">20:00</option>
+                    </select>
+                  </div>
+                  <div class="block-input-group" style="flex: 1; min-width: 140px;">
+                    <label for="blockReasonInput">사유 (선택)</label>
+                    <input type="text" id="blockReasonInput" class="form-input-sm" placeholder="예: 개인 일정 / 임시 휴무">
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm" id="addBlockBtn" style="align-self: flex-end;">+ 특정 날짜 차단</button>
                 </div>
-                <div class="block-input-group">
-                  <label for="blockReasonInput">사유 (선택)</label>
-                  <input type="text" id="blockReasonInput" class="form-input-sm" placeholder="예: 정기 레슨 / 개인 일정">
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" id="addBlockBtn" style="align-self: flex-end;">+ 차단 등록</button>
               </div>
             </div>
 
-            <div class="table-container" style="margin-top: 16px;">
+            <!-- List 1: Weekly Recurring Lessons Table -->
+            <div class="schedule-section-header" style="margin-top: 20px;">
+              <h5>🔁 매주 반복 고정 레슨 목록 (<span id="weeklyBlockCountSpan">0</span>건)</h5>
+            </div>
+            <div class="table-container" style="margin-top: 8px;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>반복 요일</th>
+                    <th>고정 시간</th>
+                    <th>레슨 / 사유</th>
+                    <th>상태</th>
+                    <th>해제</th>
+                  </tr>
+                </thead>
+                <tbody id="weeklyBlockListBody">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- List 2: Single Date Blocked Table -->
+            <div class="schedule-section-header" style="margin-top: 24px;">
+              <h5>📅 특정 날짜 1회성 차단 목록 (<span id="singleBlockCountSpan">0</span>건)</h5>
+            </div>
+            <div class="table-container" style="margin-top: 8px;">
               <table class="admin-table">
                 <thead>
                   <tr>
                     <th>차단 날짜</th>
                     <th>차단 시간</th>
                     <th>사유</th>
-                    <th>등록일</th>
+                    <th>상태</th>
                     <th>해제</th>
                   </tr>
                 </thead>
