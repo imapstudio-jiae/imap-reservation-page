@@ -788,6 +788,12 @@ function initEventListeners() {
 
   // 8. Admin Modal Actions
   el.openAdminBtn.addEventListener('click', () => {
+    const pw = prompt('관리자 비밀번호를 입력하세요.');
+    if (pw === null) return; // 취소
+    if (pw !== '202424') {
+      alert('비밀번호가 올바르지 않습니다.');
+      return;
+    }
     renderAdminBookingsTable();
     renderBlockedListTable();
     el.adminModal.style.display = 'flex';
