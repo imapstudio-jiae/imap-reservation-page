@@ -1557,6 +1557,300 @@ html, body {
   margin: 0;
 }
 
+/* ====================================================
+   Weekly Timetable (Google Calendar Style)
+   ==================================================== */
+.timetable-scroll-wrapper {
+  background: #FFF;
+  border: 1.5px solid var(--border-color);
+  border-radius: 12px;
+  overflow: auto;
+  max-height: 580px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+}
+
+.timetable-grid-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* Header: Day Columns */
+.timetable-grid-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: #F6FAF8;
+  border-bottom: 2px solid #CBDCD6;
+  border-right: 1px solid #E2EDE8;
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #37534C;
+}
+
+.timetable-grid-table thead th:first-child {
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: #EDF4F1;
+  border-right: 2px solid #CBDCD6;
+  color: #5C6B64;
+  font-size: 0.75rem;
+}
+
+.timetable-grid-table thead th.day-sat {
+  color: #2D68C4;
+  background: #F2F7FF;
+}
+
+.timetable-grid-table thead th.day-sun {
+  color: #C0392B;
+  background: #FFF5F5;
+}
+
+/* All-Day Row */
+.timetable-allday-row th,
+.timetable-allday-row td {
+  position: sticky;
+  top: 39px;
+  z-index: 12;
+  background: #FAFDFB;
+  border-bottom: 2px solid #CBDCD6;
+  border-right: 1px solid #E2EDE8;
+  padding: 5px;
+  vertical-align: top;
+  min-height: 36px;
+}
+
+.timetable-allday-row th {
+  left: 0;
+  z-index: 18;
+  background: #EDF4F1;
+  border-right: 2px solid #CBDCD6;
+  font-size: 0.72rem;
+  color: #B45348;
+  text-align: center;
+  font-weight: 700;
+}
+
+.allday-badge-box {
+  background: #FEE2E2;
+  border: 1px solid #F87171;
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  color: #991B1B;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(185, 28, 28, 0.1);
+}
+
+.allday-badge-box .allday-del-btn {
+  background: transparent;
+  border: none;
+  color: #991B1B;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0 2px;
+  font-weight: 800;
+  border-radius: 3px;
+}
+.allday-badge-box .allday-del-btn:hover {
+  background: rgba(185, 28, 28, 0.2);
+}
+
+/* Time Slot Rows */
+.timetable-grid-table tbody td {
+  border-bottom: 1px solid #EEF3F0;
+  border-right: 1px solid #EEF3F0;
+  height: 42px;
+  padding: 3px;
+  vertical-align: top;
+  position: relative;
+  transition: background-color 0.12s ease;
+}
+
+.timetable-row-hour td {
+  border-top: 1px solid #D8E5DF;
+}
+.timetable-row-half td {
+  border-top: 1px dashed #EAF0EC;
+}
+
+.timetable-grid-table tbody td:hover {
+  background-color: #F8FAF9;
+}
+
+/* Time Header cell in body */
+.timetable-time-cell {
+  position: sticky;
+  left: 0;
+  z-index: 8;
+  background: #F8FAF9;
+  border-right: 2px solid #CBDCD6 !important;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #6C7D76;
+  font-weight: 600;
+  vertical-align: middle !important;
+}
+
+.timetable-row-hour .timetable-time-cell {
+  font-weight: 700;
+  color: #2E4F47;
+}
+
+.timetable-row-half .timetable-time-cell {
+  font-size: 0.68rem;
+  color: #8A9B94;
+}
+
+/* Lesson Card Styles */
+.tt-lesson-card {
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-left: 3.5px solid;
+  font-size: 0.75rem;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  min-height: 36px;
+}
+
+.tt-lesson-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+  z-index: 5;
+}
+
+.tt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.tt-card-time {
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.tt-card-del-btn {
+  background: transparent;
+  border: none;
+  color: #8C7E75;
+  cursor: pointer;
+  padding: 0 3px;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 700;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.tt-card-del-btn:hover {
+  background: rgba(180, 83, 72, 0.15);
+  color: #B45348;
+}
+
+.tt-card-reason {
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Color Categories */
+/* 1. 정기 고정 레슨 (시그니처 세이지) */
+.tt-card-regular {
+  background: #EBF4F0;
+  border-left-color: #2E4F47;
+  color: #1B3831;
+}
+
+/* 2. 예약 레슨 (소프트 블루) */
+.tt-card-booking {
+  background: #EFF6FF;
+  border-left-color: #3B82F6;
+  color: #1E40AF;
+}
+
+/* 3. 개인 레슨 (소프트 퍼플) */
+.tt-card-private {
+  background: #F5F3FF;
+  border-left-color: #8B5CF6;
+  color: #5B21B6;
+}
+
+/* 4. 기타/임시 차단 (소프트 로즈) */
+.tt-card-blocked {
+  background: #FEF2F2;
+  border-left-color: #EF4444;
+  color: #991B1B;
+}
+
+/* Legend Badges */
+.timetable-legend-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-fixed { background: #EBF4F0; color: #1B3831; border: 1px solid #A8C5B9; }
+.legend-booking { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+.legend-private { background: #F5F3FF; color: #5B21B6; border: 1px solid #DDD6FE; }
+
+/* View Toggle Buttons */
+.timetable-view-toggle {
+  display: inline-flex;
+  background: #E8F0EC;
+  padding: 3px;
+  border-radius: 8px;
+  gap: 3px;
+}
+
+.view-toggle-btn {
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #5C6B64;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-toggle-btn.active {
+  background: #FFF;
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+
 /* Footer */
 .app-footer {
   text-align: center;

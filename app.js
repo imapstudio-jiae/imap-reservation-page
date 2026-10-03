@@ -36,6 +36,25 @@ const DEFAULT_TIME_SLOTS = [
   '16:00', '17:00', '18:00', '19:00', '20:00'
 ];
 
+// 30-minute intervals for Weekly Timetable (10:00 ~ 20:00)
+const WEEKLY_TIMETABLE_HOURS = [
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+  '19:00', '19:30', '20:00'
+];
+
+// Weekday columns starting from Monday to Sunday
+const WEEKLY_TIMETABLE_DAYS = [
+  { day: 1, name: '월요일', short: '월' },
+  { day: 2, name: '화요일', short: '화' },
+  { day: 3, name: '수요일', short: '수' },
+  { day: 4, name: '목요일', short: '목' },
+  { day: 5, name: '금요일', short: '금' },
+  { day: 6, name: '토요일', short: '토', isSat: true },
+  { day: 0, name: '일요일', short: '일', isSun: true }
+];
+
 const KOREAN_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 // App State
@@ -147,6 +166,12 @@ const el = {
   btnTimesMorning: document.getElementById('btnTimesMorning'),
   btnTimesEvening: document.getElementById('btnTimesEvening'),
   btnTimesClear: document.getElementById('btnTimesClear'),
+
+  // Timetable View Elements
+  weeklyTimetableView: document.getElementById('weeklyTimetableView'),
+  weeklyListView: document.getElementById('weeklyListView'),
+  btnViewTimetable: document.getElementById('btnViewTimetable'),
+  btnViewList: document.getElementById('btnViewList'),
 
   // Admin Single Schedule Blocking Inputs
   blockDateInput: document.getElementById('blockDateInput'),
@@ -673,13 +698,136 @@ function renderBlockedListTable() {
   });
 }
 
+// Determine card style category based on reason text
+function getLessonCategoryStyle(reason = '') {
+  const text = (reason || '').toLowerCase();
+  if (text.includes('예약') || text.includes('상담') || text.includes('미팅')) {
+    return {
+      className: 'tt-card-booking',
+      label: '예약 레슨'
+    };
+  }
+  if (text.includes('개인') || text.includes('1:1') || text.includes('프라이빗')) {
+    return {
+      className: 'tt-card-private',
+      label: '개인 레슨'
+    };
+  }
+  if (text.includes('휴무') || text.includes('차단') || text.includes('외출') || text.includes('개인일정')) {
+    return {
+      className: 'tt-card-blocked',
+      label: '일정 차단'
+    };
+  }
+  return {
+    className: 'tt-card-regular',
+    label: '정기 고정 레슨'
+  };
+}
+
+// 1. Google Calendar Style Weekly Timetable Grid
+function renderWeeklyTimetableGrid(list) {
+  if (!el.weeklyTimetableView) return;
+
+  // Build the timetable grid table
+  let html = `
+    <table class="timetable-grid-table">
+      <thead>
+        <tr>
+          <th>시간</th>
+          ${WEEKLY_TIMETABLE_DAYS.map(d => {
+            const cls = d.isSat ? 'day-sat' : d.isSun ? 'day-sun' : '';
+            return `<th class="${cls}">${d.name}</th>`;
+          }).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        <!-- All-Day (하루 종일) Row -->
+        <tr class="timetable-allday-row">
+          <th>종일</th>
+          ${WEEKLY_TIMETABLE_DAYS.map(d => {
+            const allDayItems = list.filter(item => item.dayOfWeek === d.day && item.time === 'ALL');
+            if (allDayItems.length === 0) {
+              return '<td></td>';
+            }
+            return `
+              <td>
+                ${allDayItems.map(item => `
+                  <div class="allday-badge-box" title="${item.reason || '정기 휴무'}">
+                    <span>🚫 ${item.reason || '정기 휴무'}</span>
+                    <button type="button" class="allday-del-btn remove-weekly-block-btn" data-id="${item.id}" title="해제">×</button>
+                  </div>
+                `).join('')}
+              </td>
+            `;
+          }).join('')}
+        </tr>
+  `;
+
+  // Time Slots (30 min increments)
+  WEEKLY_TIMETABLE_HOURS.forEach(timeStr => {
+    const isHour = timeStr.endsWith(':00');
+    const rowClass = isHour ? 'timetable-row-hour' : 'timetable-row-half';
+
+    html += `
+      <tr class="${rowClass}">
+        <td class="timetable-time-cell">${timeStr}</td>
+        ${WEEKLY_TIMETABLE_DAYS.map(d => {
+          // Find matching recurring schedules for this day and time
+          const matches = list.filter(item => item.dayOfWeek === d.day && item.time === timeStr);
+          if (matches.length === 0) {
+            return `<td></td>`;
+          }
+          return `
+            <td>
+              ${matches.map(item => {
+                const cat = getLessonCategoryStyle(item.reason);
+                return `
+                  <div class="tt-lesson-card ${cat.className}">
+                    <div class="tt-card-header">
+                      <span class="tt-card-time">${item.time}</span>
+                      <button type="button" class="tt-card-del-btn remove-weekly-block-btn" data-id="${item.id}" title="해제">×</button>
+                    </div>
+                    <div class="tt-card-reason" title="${item.reason || '정기 고정 레슨'}">${item.reason || '정기 고정 레슨'}</div>
+                  </div>
+                `;
+              }).join('')}
+            </td>
+          `;
+        }).join('')}
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+  `;
+
+  el.weeklyTimetableView.innerHTML = html;
+
+  // Bind delete handlers inside timetable
+  el.weeklyTimetableView.querySelectorAll('.remove-weekly-block-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = e.currentTarget.getAttribute('data-id');
+      removeWeeklyBlockedSchedule(id);
+    });
+  });
+}
+
 function renderWeeklyBlockedListTable() {
-  if (!el.weeklyBlockListBody) return;
   const list = getWeeklyBlockedSchedules();
-  el.weeklyBlockListBody.innerHTML = '';
   if (el.weeklyBlockCountSpan) {
     el.weeklyBlockCountSpan.textContent = list.length;
   }
+
+  // 1. Render Google Calendar style Timetable
+  renderWeeklyTimetableGrid(list);
+
+  // 2. Render Traditional List View
+  if (!el.weeklyBlockListBody) return;
+  el.weeklyBlockListBody.innerHTML = '';
 
   if (list.length === 0) {
     el.weeklyBlockListBody.innerHTML = `
@@ -702,11 +850,15 @@ function renderWeeklyBlockedListTable() {
 
   sorted.forEach(item => {
     const dayName = KOREAN_WEEKDAYS[item.dayOfWeek];
+    const cat = getLessonCategoryStyle(item.reason);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong style="color:var(--primary);">매주 ${dayName}요일</strong></td>
       <td>${item.time === 'ALL' ? '<span style="color:#B45348; font-weight:700;">하루 종일 (정기 휴무)</span>' : `<strong>${item.time}</strong>`}</td>
-      <td>${item.reason || '정기 레슨'}</td>
+      <td>
+        <span class="timetable-legend-badge ${cat.className === 'tt-card-booking' ? 'legend-booking' : cat.className === 'tt-card-private' ? 'legend-private' : 'legend-fixed'}" style="margin-right:4px;">${cat.label}</span>
+        ${item.reason || '정기 레슨'}
+      </td>
       <td><span class="badge-confirmed">매주 반복중</span></td>
       <td>
         <button type="button" class="btn-sm btn-decline remove-weekly-block-btn" data-id="${item.id}">해제</button>
@@ -1398,25 +1550,29 @@ function initEventListeners() {
   if (el.btnTimesAll) {
     el.btnTimesAll.addEventListener('click', () => {
       document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
-        if (c.value !== 'ALL') c.checked = true;
+        if (c.value !== 'ALL' && c.value.endsWith(':00')) c.checked = true;
       });
       updateWeeklySelectionSummary();
     });
   }
   if (el.btnTimesMorning) {
     el.btnTimesMorning.addEventListener('click', () => {
-      const targets = ['10:00', '11:00', '13:00', '14:00'];
       document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
-        c.checked = targets.includes(c.value);
+        if (c.value !== 'ALL') {
+          const hour = parseInt(c.value.split(':')[0], 10);
+          c.checked = (hour >= 10 && hour <= 14);
+        }
       });
       updateWeeklySelectionSummary();
     });
   }
   if (el.btnTimesEvening) {
     el.btnTimesEvening.addEventListener('click', () => {
-      const targets = ['15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
       document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
-        c.checked = targets.includes(c.value);
+        if (c.value !== 'ALL') {
+          const hour = parseInt(c.value.split(':')[0], 10);
+          c.checked = (hour >= 15 && hour <= 20);
+        }
       });
       updateWeeklySelectionSummary();
     });
@@ -1425,6 +1581,23 @@ function initEventListeners() {
     el.btnTimesClear.addEventListener('click', () => {
       document.querySelectorAll('input[name="weeklyTime"]').forEach(c => c.checked = false);
       updateWeeklySelectionSummary();
+    });
+  }
+
+  // View Toggle for Weekly Timetable vs Traditional List
+  if (el.btnViewTimetable && el.btnViewList) {
+    el.btnViewTimetable.addEventListener('click', () => {
+      el.btnViewTimetable.classList.add('active');
+      el.btnViewList.classList.remove('active');
+      if (el.weeklyTimetableView) el.weeklyTimetableView.style.display = 'block';
+      if (el.weeklyListView) el.weeklyListView.style.display = 'none';
+    });
+
+    el.btnViewList.addEventListener('click', () => {
+      el.btnViewList.classList.add('active');
+      el.btnViewTimetable.classList.remove('active');
+      if (el.weeklyTimetableView) el.weeklyTimetableView.style.display = 'none';
+      if (el.weeklyListView) el.weeklyListView.style.display = 'block';
     });
   }
 

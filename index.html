@@ -471,12 +471,12 @@
                     </div>
                   </div>
 
-                  <!-- 시간 다중 선택 -->
+                  <!-- 시간 다중 선택 (30분 단위) -->
                   <div class="multi-select-group">
                     <div class="multi-select-header">
-                      <span class="multi-select-label">⏰ 고정 시간 선택 (다중 선택)</span>
+                      <span class="multi-select-label">⏰ 고정 시간 선택 (30분 단위 다중 선택)</span>
                       <div class="quick-select-btns">
-                        <button type="button" class="quick-btn" id="btnTimesAll">전체시간</button>
+                        <button type="button" class="quick-btn" id="btnTimesAll">정시전체</button>
                         <button type="button" class="quick-btn" id="btnTimesMorning">오전/낮(10~14시)</button>
                         <button type="button" class="quick-btn" id="btnTimesEvening">오후/저녁(15~20시)</button>
                         <button type="button" class="quick-btn" id="btnTimesClear">선택해제</button>
@@ -492,36 +492,80 @@
                         <span class="chip-check-btn">10:00</span>
                       </label>
                       <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="10:30" class="chip-check-input">
+                        <span class="chip-check-btn">10:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="11:00" class="chip-check-input">
                         <span class="chip-check-btn">11:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="11:30" class="chip-check-input">
+                        <span class="chip-check-btn">11:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="12:00" class="chip-check-input">
+                        <span class="chip-check-btn">12:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="12:30" class="chip-check-input">
+                        <span class="chip-check-btn">12:30</span>
                       </label>
                       <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="13:00" class="chip-check-input">
                         <span class="chip-check-btn">13:00</span>
                       </label>
                       <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="13:30" class="chip-check-input">
+                        <span class="chip-check-btn">13:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="14:00" class="chip-check-input">
                         <span class="chip-check-btn">14:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="14:30" class="chip-check-input">
+                        <span class="chip-check-btn">14:30</span>
                       </label>
                       <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="15:00" class="chip-check-input">
                         <span class="chip-check-btn">15:00</span>
                       </label>
                       <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="15:30" class="chip-check-input">
+                        <span class="chip-check-btn">15:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="16:00" class="chip-check-input">
                         <span class="chip-check-btn">16:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="16:30" class="chip-check-input">
+                        <span class="chip-check-btn">16:30</span>
                       </label>
                       <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="17:00" class="chip-check-input">
                         <span class="chip-check-btn">17:00</span>
                       </label>
                       <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="17:30" class="chip-check-input">
+                        <span class="chip-check-btn">17:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="18:00" class="chip-check-input">
                         <span class="chip-check-btn">18:00</span>
                       </label>
                       <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="18:30" class="chip-check-input">
+                        <span class="chip-check-btn">18:30</span>
+                      </label>
+                      <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="19:00" class="chip-check-input">
                         <span class="chip-check-btn">19:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="19:30" class="chip-check-input">
+                        <span class="chip-check-btn">19:30</span>
                       </label>
                       <label class="chip-checkbox-item">
                         <input type="checkbox" name="weeklyTime" value="20:00" class="chip-check-input">
@@ -580,11 +624,27 @@
               </div>
             </div>
 
-            <!-- List 1: Weekly Recurring Lessons Table -->
-            <div class="schedule-section-header" style="margin-top: 20px;">
-              <h5>🔁 매주 반복 고정 레슨 목록 (<span id="weeklyBlockCountSpan">0</span>건)</h5>
+            <!-- Section: Weekly Recurring Lessons Timetable (Google Calendar Style) -->
+            <div class="schedule-section-header" style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h5 style="margin: 0;">🗓️ 매주 반복 고정 레슨 주간 시간표 (<span id="weeklyBlockCountSpan">0</span>건)</h5>
+                <span class="timetable-legend-badge legend-fixed">정기 고정 레슨</span>
+                <span class="timetable-legend-badge legend-booking">예약 레슨</span>
+                <span class="timetable-legend-badge legend-private">개인 레슨</span>
+              </div>
+              <div class="timetable-view-toggle">
+                <button type="button" class="view-toggle-btn active" id="btnViewTimetable">📅 주간 타임테이블</button>
+                <button type="button" class="view-toggle-btn" id="btnViewList">📋 목록 뷰</button>
+              </div>
             </div>
-            <div class="table-container" style="margin-top: 8px;">
+
+            <!-- View 1: Weekly Timetable Grid -->
+            <div id="weeklyTimetableView" class="timetable-scroll-wrapper" style="margin-top: 10px;">
+              <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- View 2: List Table View -->
+            <div id="weeklyListView" class="table-container" style="margin-top: 10px; display: none;">
               <table class="admin-table">
                 <thead>
                   <tr>
