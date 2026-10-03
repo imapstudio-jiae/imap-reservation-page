@@ -668,9 +668,9 @@ html, body {
 
 .time-slot-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  max-height: 250px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  max-height: 300px;
   overflow-y: auto;
   padding: 4px 2px;
 }
@@ -680,12 +680,13 @@ html, body {
   border: 1.5px solid var(--border-color);
   border-radius: 8px;
   padding: 9px 4px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #374E49;
   text-align: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .slot-btn:hover:not(.booked) {
