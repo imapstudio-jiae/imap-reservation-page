@@ -422,43 +422,127 @@
               </div>
 
               <!-- Form 1: Weekly Recurring Lesson -->
+              <!-- Form 1: Weekly Recurring Lesson -->
               <div id="weeklyBlockForm">
                 <h4>🔁 매주 고정 레슨 / 반복 일정 등록</h4>
-                <p class="admin-tip">지정하신 요일과 시간은 <strong>매주 자동으로 예약이 차단</strong>되어 예약자가 선택할 수 없습니다.</p>
-                <div class="block-inputs">
-                  <div class="block-input-group">
-                    <label for="weeklyDaySelect">반복 요일</label>
-                    <select id="weeklyDaySelect" class="form-input-sm">
-                      <option value="1">매주 월요일</option>
-                      <option value="2">매주 화요일</option>
-                      <option value="3">매주 수요일</option>
-                      <option value="4">매주 목요일</option>
-                      <option value="5">매주 금요일</option>
-                      <option value="6">매주 토요일</option>
-                      <option value="0">매주 일요일</option>
-                    </select>
+                <p class="admin-tip">지정하신 요일과 시간은 <strong>매주 자동으로 예약이 차단</strong>되어 예약자가 선택할 수 없습니다. (요일과 시간을 복수 선택하여 여러 일정을 한 번에 일괄 등록할 수 있습니다)</p>
+                
+                <div class="block-multi-section">
+                  <!-- 요일 다중 선택 -->
+                  <div class="multi-select-group">
+                    <div class="multi-select-header">
+                      <span class="multi-select-label">📅 반복 요일 선택 (다중 선택)</span>
+                      <div class="quick-select-btns">
+                        <button type="button" class="quick-btn" id="btnDaysAll">전체</button>
+                        <button type="button" class="quick-btn" id="btnDaysWeekday">평일(월~금)</button>
+                        <button type="button" class="quick-btn" id="btnDaysWeekend">주말(토,일)</button>
+                        <button type="button" class="quick-btn" id="btnDaysClear">선택해제</button>
+                      </div>
+                    </div>
+                    <div class="chip-checkbox-grid" id="weeklyDaysContainer">
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="1" class="chip-check-input">
+                        <span class="chip-check-btn">월요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="2" class="chip-check-input">
+                        <span class="chip-check-btn">화요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="3" class="chip-check-input">
+                        <span class="chip-check-btn">수요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="4" class="chip-check-input">
+                        <span class="chip-check-btn">목요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="5" class="chip-check-input">
+                        <span class="chip-check-btn">금요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="6" class="chip-check-input">
+                        <span class="chip-check-btn day-sat">토요일</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyDay" value="0" class="chip-check-input">
+                        <span class="chip-check-btn day-sun">일요일</span>
+                      </label>
+                    </div>
                   </div>
-                  <div class="block-input-group">
-                    <label for="weeklyTimeSelect">고정 시간</label>
-                    <select id="weeklyTimeSelect" class="form-input-sm">
-                      <option value="ALL">하루 종일 (정기 휴무)</option>
-                      <option value="10:00">10:00</option>
-                      <option value="11:00">11:00</option>
-                      <option value="13:00">13:00</option>
-                      <option value="14:00">14:00</option>
-                      <option value="15:00">15:00</option>
-                      <option value="16:00">16:00</option>
-                      <option value="17:00">17:00</option>
-                      <option value="18:00">18:00</option>
-                      <option value="19:00">19:00</option>
-                      <option value="20:00">20:00</option>
-                    </select>
+
+                  <!-- 시간 다중 선택 -->
+                  <div class="multi-select-group">
+                    <div class="multi-select-header">
+                      <span class="multi-select-label">⏰ 고정 시간 선택 (다중 선택)</span>
+                      <div class="quick-select-btns">
+                        <button type="button" class="quick-btn" id="btnTimesAll">전체시간</button>
+                        <button type="button" class="quick-btn" id="btnTimesMorning">오전/낮(10~14시)</button>
+                        <button type="button" class="quick-btn" id="btnTimesEvening">오후/저녁(15~20시)</button>
+                        <button type="button" class="quick-btn" id="btnTimesClear">선택해제</button>
+                      </div>
+                    </div>
+                    <div class="chip-checkbox-grid" id="weeklyTimesContainer">
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="ALL" class="chip-check-input">
+                        <span class="chip-check-btn time-all">🚫 하루 종일 (정기 휴무)</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="10:00" class="chip-check-input">
+                        <span class="chip-check-btn">10:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="11:00" class="chip-check-input">
+                        <span class="chip-check-btn">11:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="13:00" class="chip-check-input">
+                        <span class="chip-check-btn">13:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="14:00" class="chip-check-input">
+                        <span class="chip-check-btn">14:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="15:00" class="chip-check-input">
+                        <span class="chip-check-btn">15:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="16:00" class="chip-check-input">
+                        <span class="chip-check-btn">16:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="17:00" class="chip-check-input">
+                        <span class="chip-check-btn">17:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="18:00" class="chip-check-input">
+                        <span class="chip-check-btn">18:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="19:00" class="chip-check-input">
+                        <span class="chip-check-btn">19:00</span>
+                      </label>
+                      <label class="chip-checkbox-item">
+                        <input type="checkbox" name="weeklyTime" value="20:00" class="chip-check-input">
+                        <span class="chip-check-btn">20:00</span>
+                      </label>
+                    </div>
                   </div>
-                  <div class="block-input-group" style="flex: 1; min-width: 140px;">
-                    <label for="weeklyReasonInput">레슨명 / 사유</label>
-                    <input type="text" id="weeklyReasonInput" class="form-input-sm" placeholder="예: 정기 어쿠스틱 기타 레슨">
+
+                  <!-- 사유 입력 및 등록 바 -->
+                  <div class="block-calc-banner">
+                    <div style="flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px;">
+                      <label for="weeklyReasonInput" style="font-size: 0.8rem; font-weight: 700; color: #37534C; white-space: nowrap;">레슨명/사유:</label>
+                      <input type="text" id="weeklyReasonInput" class="form-input-sm" style="flex: 1;" placeholder="예: 정기 어쿠스틱 기타 레슨 (선택사항)">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                      <div class="block-calc-info">
+                        선택 요일 <span id="selectedDaysCount" class="block-calc-count">0</span>개 × 시간 <span id="selectedTimesCount" class="block-calc-count">0</span>개 = 총 <strong id="totalCombinationsCount" class="block-calc-count">0</strong>건
+                      </div>
+                      <button type="button" class="btn btn-primary btn-sm" id="addWeeklyBlockBtn">+ 선택한 일정 일괄 차단 등록</button>
+                    </div>
                   </div>
-                  <button type="button" class="btn btn-primary btn-sm" id="addWeeklyBlockBtn" style="align-self: flex-end;">+ 매주 반복 추가</button>
                 </div>
               </div>
 

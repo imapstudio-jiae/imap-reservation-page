@@ -130,14 +130,23 @@ const el = {
   weeklyBlockForm: document.getElementById('weeklyBlockForm'),
   singleBlockForm: document.getElementById('singleBlockForm'),
 
-  // Weekly Recurring Blocking Inputs
-  weeklyDaySelect: document.getElementById('weeklyDaySelect'),
-  weeklyTimeSelect: document.getElementById('weeklyTimeSelect'),
+  // Weekly Recurring Blocking Inputs (Multi-select)
   weeklyReasonInput: document.getElementById('weeklyReasonInput'),
   addWeeklyBlockBtn: document.getElementById('addWeeklyBlockBtn'),
   weeklyBlockListBody: document.getElementById('weeklyBlockListBody'),
   weeklyBlockCountSpan: document.getElementById('weeklyBlockCountSpan'),
   singleBlockCountSpan: document.getElementById('singleBlockCountSpan'),
+  selectedDaysCount: document.getElementById('selectedDaysCount'),
+  selectedTimesCount: document.getElementById('selectedTimesCount'),
+  totalCombinationsCount: document.getElementById('totalCombinationsCount'),
+  btnDaysAll: document.getElementById('btnDaysAll'),
+  btnDaysWeekday: document.getElementById('btnDaysWeekday'),
+  btnDaysWeekend: document.getElementById('btnDaysWeekend'),
+  btnDaysClear: document.getElementById('btnDaysClear'),
+  btnTimesAll: document.getElementById('btnTimesAll'),
+  btnTimesMorning: document.getElementById('btnTimesMorning'),
+  btnTimesEvening: document.getElementById('btnTimesEvening'),
+  btnTimesClear: document.getElementById('btnTimesClear'),
 
   // Admin Single Schedule Blocking Inputs
   blockDateInput: document.getElementById('blockDateInput'),
@@ -714,26 +723,75 @@ function renderWeeklyBlockedListTable() {
   });
 }
 
+function updateWeeklySelectionSummary() {
+  const checkedDays = document.querySelectorAll('input[name="weeklyDay"]:checked');
+  const checkedTimes = document.querySelectorAll('input[name="weeklyTime"]:checked');
+
+  const daysCount = checkedDays.length;
+  const timesCount = checkedTimes.length;
+  const total = daysCount * timesCount;
+
+  if (el.selectedDaysCount) el.selectedDaysCount.textContent = daysCount;
+  if (el.selectedTimesCount) el.selectedTimesCount.textContent = timesCount;
+  if (el.totalCombinationsCount) el.totalCombinationsCount.textContent = total;
+
+  if (el.addWeeklyBlockBtn) {
+    if (total > 0) {
+      el.addWeeklyBlockBtn.textContent = `+ 선택한 일정 ${total}건 일괄 차단 등록`;
+    } else {
+      el.addWeeklyBlockBtn.textContent = '+ 선택한 일정 일괄 차단 등록';
+    }
+  }
+}
+
 function addWeeklyBlockedSchedule() {
-  const dayOfWeek = Number(el.weeklyDaySelect.value);
-  const timeVal = el.weeklyTimeSelect.value;
-  const reasonVal = el.weeklyReasonInput.value.trim() || '정기 고정 레슨';
+  const checkedDayEls = Array.from(document.querySelectorAll('input[name="weeklyDay"]:checked'));
+  const checkedTimeEls = Array.from(document.querySelectorAll('input[name="weeklyTime"]:checked'));
+  const reasonVal = (el.weeklyReasonInput && el.weeklyReasonInput.value.trim()) || '정기 고정 레슨';
 
-  const list = getWeeklyBlockedSchedules();
-
-  // Check duplicate
-  const exists = list.some(item => item.dayOfWeek === dayOfWeek && item.time === timeVal);
-  if (exists) {
-    alert(`매주 [${KOREAN_WEEKDAYS[dayOfWeek]}요일 ${timeVal === 'ALL' ? '하루 종일' : timeVal}]은(는) 이미 등록되어 있습니다.`);
+  if (checkedDayEls.length === 0) {
+    alert('차단할 반복 요일을 1개 이상 선택해 주세요.\n(예: 수, 목, 금 요일 체크)');
     return;
   }
 
-  list.push({
-    id: 'wblk-' + Date.now(),
-    dayOfWeek: dayOfWeek,
-    time: timeVal,
-    reason: reasonVal
+  if (checkedTimeEls.length === 0) {
+    alert('차단할 고정 시간을 1개 이상 선택해 주세요.\n(예: 11:00, 12:00 또는 하루 종일 체크)');
+    return;
+  }
+
+  const selectedDays = checkedDayEls.map(input => Number(input.value));
+  const selectedTimes = checkedTimeEls.map(input => input.value);
+
+  const list = getWeeklyBlockedSchedules();
+  let addedCount = 0;
+  let duplicateCount = 0;
+  const summaryByDay = {};
+
+  selectedDays.forEach(day => {
+    summaryByDay[day] = [];
+    selectedTimes.forEach(time => {
+      const exists = list.some(item => item.dayOfWeek === day && item.time === time);
+      if (exists) {
+        duplicateCount++;
+      } else {
+        const id = 'wblk-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+        list.push({
+          id: id,
+          dayOfWeek: day,
+          time: time,
+          reason: reasonVal
+        });
+        addedCount++;
+        const timeLabel = time === 'ALL' ? '하루 종일' : time;
+        summaryByDay[day].push(timeLabel);
+      }
+    });
   });
+
+  if (addedCount === 0) {
+    alert(`선택하신 모든 일정 조합(${duplicateCount}건)이 이미 등록되어 있습니다.`);
+    return;
+  }
 
   saveWeeklyBlockedSchedules(list);
   renderBlockedListTable();
@@ -741,8 +799,28 @@ function addWeeklyBlockedSchedule() {
   renderTimeSlots();
   renderAdminCalendar();
 
-  el.weeklyReasonInput.value = '';
-  alert(`[매주 ${KOREAN_WEEKDAYS[dayOfWeek]}요일 ${timeVal === 'ALL' ? '하루 종일' : timeVal}] 정기 레슨/일정이 등록되었습니다.\n매주 해당 시간에는 예약자가 신청할 수 없도록 자동 차단됩니다.`);
+  // Reset checkboxes and inputs
+  document.querySelectorAll('input[name="weeklyDay"]').forEach(c => c.checked = false);
+  document.querySelectorAll('input[name="weeklyTime"]').forEach(c => c.checked = false);
+  if (el.weeklyReasonInput) el.weeklyReasonInput.value = '';
+  updateWeeklySelectionSummary();
+
+  // Show detailed confirmation message
+  let msg = `[매주 고정 레슨/일정 차단 등록 완료]\n총 ${addedCount}건의 일정이 일괄 차단 목록에 등록되었습니다.\n\n`;
+  const dayLines = [];
+  selectedDays.forEach(day => {
+    if (summaryByDay[day] && summaryByDay[day].length > 0) {
+      dayLines.push(`• ${KOREAN_WEEKDAYS[day]}요일: ${summaryByDay[day].join(', ')}`);
+    }
+  });
+  msg += dayLines.join('\n');
+
+  if (duplicateCount > 0) {
+    msg += `\n\n※ 이미 등록되어 있던 ${duplicateCount}건은 중복 방지를 위해 제외되었습니다.`;
+  }
+  msg += '\n\n매주 해당 시간에는 예약자가 신청할 수 없도록 자동 차단됩니다.';
+
+  alert(msg);
 }
 
 function removeWeeklyBlockedSchedule(id) {
@@ -1279,6 +1357,77 @@ function initEventListeners() {
     });
   }
 
+  // Multi-select Checkbox events for Weekly Recurring Blocks
+  document.querySelectorAll('input[name="weeklyDay"], input[name="weeklyTime"]').forEach(cb => {
+    cb.addEventListener('change', updateWeeklySelectionSummary);
+  });
+
+  // Quick select buttons for Weekdays
+  if (el.btnDaysAll) {
+    el.btnDaysAll.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyDay"]').forEach(c => c.checked = true);
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnDaysWeekday) {
+    el.btnDaysWeekday.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyDay"]').forEach(c => {
+        const val = Number(c.value);
+        c.checked = (val >= 1 && val <= 5);
+      });
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnDaysWeekend) {
+    el.btnDaysWeekend.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyDay"]').forEach(c => {
+        const val = Number(c.value);
+        c.checked = (val === 0 || val === 6);
+      });
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnDaysClear) {
+    el.btnDaysClear.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyDay"]').forEach(c => c.checked = false);
+      updateWeeklySelectionSummary();
+    });
+  }
+
+  // Quick select buttons for Times
+  if (el.btnTimesAll) {
+    el.btnTimesAll.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
+        if (c.value !== 'ALL') c.checked = true;
+      });
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnTimesMorning) {
+    el.btnTimesMorning.addEventListener('click', () => {
+      const targets = ['10:00', '11:00', '13:00', '14:00'];
+      document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
+        c.checked = targets.includes(c.value);
+      });
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnTimesEvening) {
+    el.btnTimesEvening.addEventListener('click', () => {
+      const targets = ['15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+      document.querySelectorAll('input[name="weeklyTime"]').forEach(c => {
+        c.checked = targets.includes(c.value);
+      });
+      updateWeeklySelectionSummary();
+    });
+  }
+  if (el.btnTimesClear) {
+    el.btnTimesClear.addEventListener('click', () => {
+      document.querySelectorAll('input[name="weeklyTime"]').forEach(c => c.checked = false);
+      updateWeeklySelectionSummary();
+    });
+  }
+
   if (el.addWeeklyBlockBtn) {
     el.addWeeklyBlockBtn.addEventListener('click', addWeeklyBlockedSchedule);
   }
@@ -1292,6 +1441,7 @@ function initEventListeners() {
 
 function init() {
   initEventListeners();
+  updateWeeklySelectionSummary();
   renderCalendar();
   renderTimeSlots();
   updateReviewCard();
