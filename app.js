@@ -1,11 +1,30 @@
 /**
  * IMAP Studio - Consultation Booking Application
- * Warm Atelier Aesthetics & Clean Streamlined Flow
+ * Supabase 실시간 DB 연동 버전
+ * ──────────────────────────────────────────────
+ * ⚠️  아래 두 줄에 본인의 Supabase 프로젝트 정보를 입력하세요
+ *    Project Settings → API 에서 확인할 수 있습니다.
  */
+const SUPABASE_URL  = 'https://kntrffydktjflvgttnlt.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_WBNiCS21h_NTVBLOnKNJiw_o0R8BPc3';
 
+// Supabase 클라이언트 초기화
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ──────────────────────────────────────────────
+// 앱 내부 캐시 (Supabase 데이터를 메모리에 보관)
+// ──────────────────────────────────────────────
+let _cache = {
+  bookings:         [],
+  blockedSchedules: [],
+  weeklyBlocks:     []
+};
+
+// STORAGE_KEYS는 더 이상 사용하지 않습니다 (Supabase로 대체)
 const STORAGE_KEYS = {
-  BOOKINGS: 'imap_studio_bookings_v3',
-  BLOCKED_SCHEDULES: 'imap_studio_blocked_schedules_v3',
+  BOOKINGS: null,
+  BLOCKED_SCHEDULES: null,
   WEEKLY_BLOCKED: 'imap_studio_weekly_blocks_v1'
 };
 
@@ -72,7 +91,8 @@ const state = {
   lastSubmitted: null,
   kakaoChannelId: '_xmxmxbG',
   adminCalendarMonth: new Date(),
-  adminSelectedDate: null
+  adminSelectedDate: null,
+  isSubmitting: false
 };
 
 // DOM Elements
@@ -186,55 +206,79 @@ const el = {
 };
 
 // ----------------------------------------------------
-// Storage Handlers
+// Supabase: 전체 데이터 로드 (앱 시작 시)
 // ----------------------------------------------------
-function getBookings() {
+async function loadAllData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function saveBookings(list) {
-  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(list));
-  updateAdminCounters();
-}
-
-function getWeeklyBlockedSchedules() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.WEEKLY_BLOCKED);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.WEEKLY_BLOCKED, JSON.stringify(DEFAULT_WEEKLY_BLOCKED));
-      return DEFAULT_WEEKLY_BLOCKED;
+    const [bRes, blkRes, wblkRes] = await Promise.all([
+      db.from('bookings').select('*').order('createdAt', { ascending: false }),
+      db.from('blocked_schedules').select('*'),
+      db.from('weekly_blocks').select('*')
+    ]);
+    if (bRes.data)    _cache.bookings         = bRes.data;
+    if (blkRes.data)  _cache.blockedSchedules = blkRes.data;
+    if (wblkRes.data) {
+      _cache.weeklyBlocks = wblkRes.data;
+      // 기본 고정 레슨이 하나도 없으면 DEFAULT 삽입
+      if (_cache.weeklyBlocks.length === 0) {
+        const { data } = await db.from('weekly_blocks').insert(DEFAULT_WEEKLY_BLOCKED).select();
+        if (data) _cache.weeklyBlocks = data;
+      }
     }
-    return JSON.parse(raw);
-  } catch (e) {
-    return DEFAULT_WEEKLY_BLOCKED;
+  } catch (err) {
+    console.error('Supabase 데이터 로드 오류:', err);
   }
 }
 
-function saveWeeklyBlockedSchedules(list) {
-  localStorage.setItem(STORAGE_KEYS.WEEKLY_BLOCKED, JSON.stringify(list));
+// Supabase Realtime 실시간 구독 (모든 기기 동기화)
+function subscribeRealtime() {
+  db.channel('public:bookings')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
+      const { data } = await db.from('bookings').select('*').order('createdAt', { ascending: false });
+      if (data) _cache.bookings = data;
+      updateAdminCounters();
+      renderCalendar();
+      renderTimeSlots();
+      if (el.adminModal && el.adminModal.style.display !== 'none') {
+        renderAdminBookingsTable();
+        renderAdminCalendar();
+      }
+    }).subscribe();
+
+  db.channel('public:blocked_schedules')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'blocked_schedules' }, async () => {
+      const { data } = await db.from('blocked_schedules').select('*');
+      if (data) _cache.blockedSchedules = data;
+      renderCalendar();
+      renderTimeSlots();
+      if (el.adminModal && el.adminModal.style.display !== 'none') {
+        renderBlockedListTable();
+        renderAdminCalendar();
+      }
+    }).subscribe();
+
+  db.channel('public:weekly_blocks')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'weekly_blocks' }, async () => {
+      const { data } = await db.from('weekly_blocks').select('*');
+      if (data) _cache.weeklyBlocks = data;
+      renderCalendar();
+      renderTimeSlots();
+      if (el.adminModal && el.adminModal.style.display !== 'none') {
+        renderBlockedListTable();
+        renderAdminCalendar();
+      }
+    }).subscribe();
 }
 
-function getBlockedSchedules() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.BLOCKED_SCHEDULES);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.BLOCKED_SCHEDULES, JSON.stringify(DEFAULT_BLOCKED_SCHEDULES));
-      return DEFAULT_BLOCKED_SCHEDULES;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
-}
+// 캐시 기반 동기 getter (기존 호출 구조 유지)
+function getBookings()                { return _cache.bookings; }
+function getBlockedSchedules()        { return _cache.blockedSchedules; }
+function getWeeklyBlockedSchedules()  { return _cache.weeklyBlocks; }
 
-function saveBlockedSchedules(list) {
-  localStorage.setItem(STORAGE_KEYS.BLOCKED_SCHEDULES, JSON.stringify(list));
-}
+// (하위 호환용 더미 — 실제 저장은 각 액션 함수에서 Supabase 직접 호출)
+function saveBookings(list)                { _cache.bookings         = list; updateAdminCounters(); }
+function saveBlockedSchedules(list)        { _cache.blockedSchedules = list; }
+function saveWeeklyBlockedSchedules(list)  { _cache.weeklyBlocks     = list; }
 
 function updateAdminCounters() {
   const bookings = getBookings();
@@ -460,10 +504,11 @@ function formatPhoneNumber(val) {
 }
 
 // ----------------------------------------------------
-// Form Submission Logic
+// Form Submission Logic (Supabase INSERT)
 // ----------------------------------------------------
-function handleSubmit(e) {
+async function handleSubmit(e) {
   e.preventDefault();
+  if (state.isSubmitting) return;
 
   let hasError = false;
 
@@ -495,9 +540,13 @@ function handleSubmit(e) {
 
   if (hasError) return;
 
-  const now = new Date();
-  const bookingId = 'IMAP-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + Math.floor(1000 + Math.random() * 9000);
+  // 이중 제출 방지
+  state.isSubmitting = true;
+  const submitBtn = document.getElementById('submitBookingBtn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '신청 중...'; }
 
+  const now = new Date();
+  const bookingId = 'IMAP-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + Math.floor(1000 + Math.random() * 9000);
   const fullType = getFullInquiryTypeLabel();
 
   const newBooking = {
@@ -515,12 +564,20 @@ function handleSubmit(e) {
     status: 'pending'
   };
 
-  const bookings = getBookings();
-  bookings.push(newBooking);
-  saveBookings(bookings);
-
-  state.lastSubmitted = newBooking;
-  showCompleteView(newBooking);
+  try {
+    const { error } = await db.from('bookings').insert([newBooking]);
+    if (error) throw error;
+    _cache.bookings.unshift(newBooking);
+    state.lastSubmitted = newBooking;
+    updateAdminCounters();
+    showCompleteView(newBooking);
+  } catch (err) {
+    console.error('예약 저장 오류:', err);
+    alert('예약 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.\n오류: ' + (err.message || err));
+  } finally {
+    state.isSubmitting = false;
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '상담 예약 신청 완료하기'; }
+  }
 }
 
 function showCompleteView(b) {
@@ -635,23 +692,34 @@ function renderAdminBookingsTable() {
   });
 }
 
-function handleAdminAction(act, id) {
-  let bookings = getBookings();
-  const target = bookings.find(b => b.id === id);
+async function handleAdminAction(act, id) {
+  const bookings = getBookings();
+  const target   = bookings.find(b => b.id === id);
   if (!target) return;
 
-  if (act === 'confirm') {
-    target.status = 'confirmed';
-    alert(`[${target.name} 님]의 ${target.date} ${target.time} 일정이 '상담 확정'되었습니다.\n해당 시간은 달력에서 자동으로 마감됩니다.`);
-  } else if (act === 'decline') {
-    if (!confirm('신청을 거절하시겠습니까? 해당 시간은 다시 예약 가능 상태로 변경될 수 있습니다.')) return;
-    target.status = 'declined';
-  } else if (act === 'delete') {
-    if (!confirm('이 예약 내역을 영구 삭제하시겠습니까?')) return;
-    bookings = bookings.filter(b => b.id !== id);
+  try {
+    if (act === 'confirm') {
+      const { error } = await db.from('bookings').update({ status: 'confirmed' }).eq('id', id);
+      if (error) throw error;
+      target.status = 'confirmed';
+      alert(`[${target.name} 님]의 ${target.date} ${target.time} 일정이 '상담 확정'되었습니다.\n해당 시간은 달력에서 자동으로 마감됩니다.`);
+    } else if (act === 'decline') {
+      if (!confirm('신청을 거절하시겠습니까?')) return;
+      const { error } = await db.from('bookings').update({ status: 'declined' }).eq('id', id);
+      if (error) throw error;
+      target.status = 'declined';
+    } else if (act === 'delete') {
+      if (!confirm('이 예약 내역을 영구 삭제하시겠습니까?')) return;
+      const { error } = await db.from('bookings').delete().eq('id', id);
+      if (error) throw error;
+      _cache.bookings = _cache.bookings.filter(b => b.id !== id);
+    }
+  } catch (err) {
+    alert('오류가 발생했습니다: ' + (err.message || err));
+    return;
   }
 
-  saveBookings(bookings);
+  updateAdminCounters();
   renderAdminBookingsTable();
   renderCalendar();
   renderTimeSlots();
@@ -900,28 +968,26 @@ function updateWeeklySelectionSummary() {
   }
 }
 
-function addWeeklyBlockedSchedule() {
-  const checkedDayEls = Array.from(document.querySelectorAll('input[name="weeklyDay"]:checked'));
+async function addWeeklyBlockedSchedule() {
+  const checkedDayEls  = Array.from(document.querySelectorAll('input[name="weeklyDay"]:checked'));
   const checkedTimeEls = Array.from(document.querySelectorAll('input[name="weeklyTime"]:checked'));
-  const reasonVal = (el.weeklyReasonInput && el.weeklyReasonInput.value.trim()) || '정기 고정 레슨';
+  const reasonVal      = (el.weeklyReasonInput && el.weeklyReasonInput.value.trim()) || '정기 고정 레슨';
 
   if (checkedDayEls.length === 0) {
-    alert('차단할 반복 요일을 1개 이상 선택해 주세요.\n(예: 수, 목, 금 요일 체크)');
+    alert('차단할 반복 요일을 1개 이상 선택해 주세요.');
     return;
   }
-
   if (checkedTimeEls.length === 0) {
-    alert('차단할 고정 시간을 1개 이상 선택해 주세요.\n(예: 11:00, 12:00 또는 하루 종일 체크)');
+    alert('차단할 고정 시간을 1개 이상 선택해 주세요.');
     return;
   }
 
-  const selectedDays = checkedDayEls.map(input => Number(input.value));
+  const selectedDays  = checkedDayEls.map(input => Number(input.value));
   const selectedTimes = checkedTimeEls.map(input => input.value);
-
-  const list = getWeeklyBlockedSchedules();
-  let addedCount = 0;
-  let duplicateCount = 0;
-  const summaryByDay = {};
+  const list          = getWeeklyBlockedSchedules();
+  const toInsert      = [];
+  let duplicateCount  = 0;
+  const summaryByDay  = {};
 
   selectedDays.forEach(day => {
     summaryByDay[day] = [];
@@ -930,72 +996,70 @@ function addWeeklyBlockedSchedule() {
       if (exists) {
         duplicateCount++;
       } else {
-        const id = 'wblk-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
-        list.push({
-          id: id,
-          dayOfWeek: day,
-          time: time,
-          reason: reasonVal
-        });
-        addedCount++;
-        const timeLabel = time === 'ALL' ? '하루 종일' : time;
-        summaryByDay[day].push(timeLabel);
+        const id = 'wblk-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+        toInsert.push({ id, dayOfWeek: day, time, reason: reasonVal });
+        summaryByDay[day].push(time === 'ALL' ? '하루 종일' : time);
       }
     });
   });
 
-  if (addedCount === 0) {
+  if (toInsert.length === 0) {
     alert(`선택하신 모든 일정 조합(${duplicateCount}건)이 이미 등록되어 있습니다.`);
     return;
   }
 
-  saveWeeklyBlockedSchedules(list);
+  try {
+    const { error } = await db.from('weekly_blocks').insert(toInsert);
+    if (error) throw error;
+    _cache.weeklyBlocks.push(...toInsert);
+  } catch (err) {
+    alert('저장 오류: ' + (err.message || err));
+    return;
+  }
+
   renderBlockedListTable();
   renderCalendar();
   renderTimeSlots();
   renderAdminCalendar();
 
-  // Reset checkboxes and inputs
   document.querySelectorAll('input[name="weeklyDay"]').forEach(c => c.checked = false);
   document.querySelectorAll('input[name="weeklyTime"]').forEach(c => c.checked = false);
   if (el.weeklyReasonInput) el.weeklyReasonInput.value = '';
   updateWeeklySelectionSummary();
 
-  // Show detailed confirmation message
-  let msg = `[매주 고정 레슨/일정 차단 등록 완료]\n총 ${addedCount}건의 일정이 일괄 차단 목록에 등록되었습니다.\n\n`;
-  const dayLines = [];
+  let msg = `[매주 고정 레슨/일정 차단 등록 완료]\n총 ${toInsert.length}건의 일정이 등록되었습니다.\n\n`;
   selectedDays.forEach(day => {
-    if (summaryByDay[day] && summaryByDay[day].length > 0) {
-      dayLines.push(`• ${KOREAN_WEEKDAYS[day]}요일: ${summaryByDay[day].join(', ')}`);
-    }
+    if (summaryByDay[day] && summaryByDay[day].length > 0)
+      msg += `• ${KOREAN_WEEKDAYS[day]}요일: ${summaryByDay[day].join(', ')}\n`;
   });
-  msg += dayLines.join('\n');
-
-  if (duplicateCount > 0) {
-    msg += `\n\n※ 이미 등록되어 있던 ${duplicateCount}건은 중복 방지를 위해 제외되었습니다.`;
-  }
+  if (duplicateCount > 0) msg += `\n※ 이미 등록되어 있던 ${duplicateCount}건은 중복 방지로 제외되었습니다.`;
   msg += '\n\n매주 해당 시간에는 예약자가 신청할 수 없도록 자동 차단됩니다.';
-
   alert(msg);
 }
 
-function removeWeeklyBlockedSchedule(id) {
-  let list = getWeeklyBlockedSchedules();
+async function removeWeeklyBlockedSchedule(id) {
+  const list   = getWeeklyBlockedSchedules();
   const target = list.find(item => item.id === id);
   if (!target) return;
   if (!confirm(`[매주 ${KOREAN_WEEKDAYS[target.dayOfWeek]}요일 ${target.time}] 정기 차단을 해제하시겠습니까?`)) return;
 
-  list = list.filter(item => item.id !== id);
-  saveWeeklyBlockedSchedules(list);
+  try {
+    const { error } = await db.from('weekly_blocks').delete().eq('id', id);
+    if (error) throw error;
+    _cache.weeklyBlocks = _cache.weeklyBlocks.filter(item => item.id !== id);
+  } catch (err) {
+    alert('오류: ' + (err.message || err));
+    return;
+  }
   renderBlockedListTable();
   renderCalendar();
   renderTimeSlots();
   renderAdminCalendar();
 }
 
-function addBlockedSchedule() {
-  const dateVal = el.blockDateInput.value;
-  const timeVal = el.blockTimeSelect.value;
+async function addBlockedSchedule() {
+  const dateVal   = el.blockDateInput.value;
+  const timeVal   = el.blockTimeSelect.value;
   const reasonVal = el.blockReasonInput.value.trim() || '스튜디오 일정/임시 휴무';
 
   if (!dateVal) {
@@ -1003,28 +1067,34 @@ function addBlockedSchedule() {
     return;
   }
 
-  const list = getBlockedSchedules();
-  list.push({
-    id: 'blk-' + Date.now(),
-    date: dateVal,
-    time: timeVal,
-    reason: reasonVal
-  });
+  const newBlock = { id: 'blk-' + Date.now(), date: dateVal, time: timeVal, reason: reasonVal };
 
-  saveBlockedSchedules(list);
+  try {
+    const { error } = await db.from('blocked_schedules').insert([newBlock]);
+    if (error) throw error;
+    _cache.blockedSchedules.push(newBlock);
+  } catch (err) {
+    alert('저장 오류: ' + (err.message || err));
+    return;
+  }
+
   renderBlockedListTable();
   renderCalendar();
   renderTimeSlots();
   renderAdminCalendar();
-
   el.blockReasonInput.value = '';
   alert(`${dateVal} [${timeVal === 'ALL' ? '하루 종일' : timeVal}] 일정이 예약 불가로 차단되었습니다.`);
 }
 
-function removeBlockedSchedule(id) {
-  let list = getBlockedSchedules();
-  list = list.filter(item => item.id !== id);
-  saveBlockedSchedules(list);
+async function removeBlockedSchedule(id) {
+  try {
+    const { error } = await db.from('blocked_schedules').delete().eq('id', id);
+    if (error) throw error;
+    _cache.blockedSchedules = _cache.blockedSchedules.filter(item => item.id !== id);
+  } catch (err) {
+    alert('오류: ' + (err.message || err));
+    return;
+  }
   renderBlockedListTable();
   renderCalendar();
   renderTimeSlots();
@@ -1616,7 +1686,17 @@ function initEventListeners() {
   }
 }
 
-function init() {
+// ──────────────────────────────────────────────
+// App Bootstrap (Supabase 데이터 로드 후 UI 초기화)
+// ──────────────────────────────────────────────
+async function init() {
+  // 로딩 중 버튼 비활성화
+  const submitBtn = document.getElementById('submitBookingBtn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '데이터 불러오는 중...'; }
+
+  await loadAllData();   // Supabase에서 전체 데이터 로드
+  subscribeRealtime();   // 실시간 구독 시작 (모든 기기 동기화)
+
   initEventListeners();
   updateWeeklySelectionSummary();
   renderCalendar();
@@ -1624,9 +1704,10 @@ function init() {
   updateReviewCard();
   updateAdminCounters();
 
-  if (el.blockDateInput) {
-    el.blockDateInput.min = formatDate(new Date());
-  }
+  if (el.blockDateInput) el.blockDateInput.min = formatDate(new Date());
+
+  // 로딩 완료
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '상담 예약 신청 완료하기'; }
 }
 
 document.addEventListener('DOMContentLoaded', init);
